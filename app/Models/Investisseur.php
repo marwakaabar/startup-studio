@@ -10,7 +10,7 @@ class Investisseur  extends Model
     use HasFactory;
     protected $table = 'investisseur';
 
-    protected $fillable = ['user_id', 'video_presentation', 'description', 'website_link', 'social_links', 'profile_image', 'cover_image'];
+    protected $fillable = ['user_id', 'video_presentation', 'description', 'website_link', 'social_links', 'profile_image', 'cover_image','visibility'];
 
     public function user()
     {

@@ -1,70 +1,42 @@
 <script setup>
-import GuestLayout from '@/Layouts/GuestLayout.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
-import { Head, useForm } from '@inertiajs/vue3';
-
-defineProps({
-    status: {
-        type: String,
-    },
-});
+import Container from "../../Components/Container.vue";
+import InputField from "../../Components/InputField.vue";
+import PrimaryBtn from "../../Components/PrimaryBtn.vue";
+import ErrorMessages from "../../Components/ErrorMessages.vue";
+import SessionMessages from "../../Components/SessionMessages.vue";
+import { useForm } from "@inertiajs/vue3";
 
 const form = useForm({
-    email: '',
+    email: "",
 });
 
+defineProps({status: String})
+
 const submit = () => {
-    form.post(route('password.email'));
+    form.post(route("password.email"));
 };
 </script>
 
 <template>
-    <GuestLayout>
-        <Head title="Réinitialisation du mot de passe" />
-
-        <div class="mb-4 text-sm text-gray-600">
-            Vous avez oublié votre mot de passe ? Pas de problème. Indiquez simplement votre adresse e-mail et nous vous enverrons un lien de réinitialisation de mot de passe pour vous permettre d'en choisir un nouveau.
+    <Head title="- Mot de passe oublié" />
+    <Container class="w-1/2">
+        <div class="mb-8 text-center">
+            <p>
+                Vous avez oublié votre mot de passe ? Pas de problème. Indiquez-nous simplement votre adresse email et nous vous enverrons un lien de réinitialisation de mot de passe qui vous permettra de choisir un nouveau mot de passe.
+            </p>
         </div>
 
-        <div
-            v-if="status"
-            class="mb-4 text-sm font-medium text-green-600"
-        >
-            {{ status }}
-        </div>
+        <!-- Messages d'erreur -->
+        <ErrorMessages :errors="form.errors" />
 
-        <form @submit.prevent="submit" class="w-full max-w-md mx-auto bg-white shadow-lg rounded-lg p-8">
-            <!-- Champ Email -->
-            <div>
-                <InputLabel for="email" value="Adresse e-mail" />
+        <SessionMessages :status="status"/>
 
-                <TextInput
-                    id="email"
-                    type="email"
-                    class="mt-1 block w-full px-4 py-2 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out"
-                    v-model="form.email"
-                    required
-                    autofocus
-                    autocomplete="username"
-                />
+        <form @submit.prevent="submit" class="space-y-6">
+            <InputField label="Email" icon="at" v-model="form.email" />
 
-                <InputError class="mt-2" :message="form.errors.email" />
-            </div>
-
-            <!-- Bouton de soumission -->
-            <div class="mt-4 flex items-center justify-end">
-                <PrimaryButton
-                    class="w-full py-2 text-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-md transition duration-200 ease-in-out"
-                    :class="{ 'opacity-50': form.processing }"
-                    :disabled="form.processing"
-                >
-                    Envoyer le lien de réinitialisation
-                </PrimaryButton>
-            </div>
+            <PrimaryBtn :disabled="form.processing">
+                Envoyer le lien de réinitialisation du mot de passe
+            </PrimaryBtn>
         </form>
-    </GuestLayout>
+    </Container>
 </template>
-

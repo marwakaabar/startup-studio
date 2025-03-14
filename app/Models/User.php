@@ -2,34 +2,34 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-class User extends Authenticatable
+
+class User extends Authenticatable implements MustVerifyEmail
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
     protected $fillable = [
-       
-            'name', 'email', 'password', 'role', 
-             'visibility', 'image', 'domain_name', 'specialty'
-       
-    
+        'name',
+        'email',
+        'password',
+        'role', 
+        'approved'
     ];
 
     /**
      * The attributes that should be hidden for serialization.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
     protected $hidden = [
         'password',
@@ -46,6 +46,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'approved' => 'boolean',
         ];
     }
     public function startup(): HasOne
@@ -53,9 +54,9 @@ class User extends Authenticatable
         return $this->hasOne(Startup::class);
     }
 
-    public function coach(): HasOne
+    public function mentor(): HasOne
     {
-        return $this->hasOne(Coach::class);
+        return $this->hasOne(Mentor::class);
     }
 
     public function investisseur(): HasOne
@@ -67,10 +68,10 @@ class User extends Authenticatable
     {
         return $this->hasOne(Admin::class);
     }
-    // Méthode pour savoir si l'utilisateur est un Coach
-    public function isCoach(): bool
+    // Méthode pour savoir si l'utilisateur est un Mentor
+    public function isMentor(): bool
     {
-        return $this->role === 'coach';
+        return $this->role === 'mentor';
     }
 
     // Méthode pour savoir si l'utilisateur est une Startup
@@ -89,5 +90,35 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+
+    public function forums()
+    {
+        return $this->hasMany(Forum::class);
+    }
+    
+    public function topics()
+    {
+        return $this->hasMany(Topic::class);
+    }
+
+    public function posts()
+    {
+        return $this->hasMany(Post::class);
+    }
+
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class);
+    }
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    public function likes()
+    {
+        return $this->hasMany(Like::class);
     }
 }
