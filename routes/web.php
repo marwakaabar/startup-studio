@@ -1,29 +1,34 @@
 <?php
 
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
-use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\AdminDashboardController;  
 
-Route::get('/', function () {
-    // Si l'utilisateur est authentifié, le rediriger vers le tableau de bord ou une autre page
-    if (Auth::check()) {
-        return redirect()->route('dashboard'); // Assure-toi de créer la route 'dashboard' si nécessaire
-    }
+Route::middleware(['auth'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->middleware('verified')->name('dashboard');
 
-    // Si l'utilisateur n'est pas authentifié, rediriger vers la page de login
-    return redirect()->route('login');
-});
-
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
-
-Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile', [ProfileController::class, 'updateInfo'])->name('profile.info');
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::put('/profile', [ProfileController::class, 'updateProfile'])->name('profile.updateProfile');
+
 });
 
-require __DIR__.'/auth.php';
+Route::prefix('admin')->middleware(['auth', 'verified'])->name('admin.')->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+    Route::prefix('users')->name('users.')->group(function () {
+        Route::get('/coachs', [AdminDashboardController::class, 'coachs'])->name('coachs');
+        Route::get('/investors', [AdminDashboardController::class, 'investors'])->name('investors');
+        Route::get('/startups', [AdminDashboardController::class, 'startups'])->name('startups');
+        Route::post('/approve-user/{id}', [AdminDashboardController::class, 'approve'])->name('users.approve-user');
+    });
+});
+
+
+Route::inertia('/', 'Home')->name('home');
+require __DIR__ . '/auth.php';
+require __DIR__ . '/forum.php';

@@ -2,54 +2,164 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\User;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Http\RedirectResponse;
+use App\Models\Investisseur;
+use App\Models\Startup;
+use App\Models\Coach;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
-use Inertia\Response;
 
 class ProfileController extends Controller
 {
+
     /**
-     * Display the user's profile form.
+     * Affiche la page de modification du profil.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Inertia\Response
      */
-    public function edit(Request $request): Response
+
+    public function edit(Request $request)
     {
+        $user = $request->user()->load(['investisseur', 'startup', 'coach']);
+
         return Inertia::render('Profile/Edit', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
-            'status' => session('status'),
-            'userInfo' => Auth::user(),
-            'role' => Auth::user()->role,
+            'user' => $user,
+            'status' => session('status')
         ]);
     }
 
+
     /**
-     * Update the user's profile information.
+     * Met à jour les informations de l'utilisateur.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
      */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
-    {
-        $request->user()->fill($request->validated());
+   public function updateInfo(Request $request)
+{
+    $user = $request->user();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
-        }
+    // Validation des champs communs
+    $fields = $request->validate([
+        'name' => ['nullable', 'max:255'],
+        'email' => ['nullable', 'lowercase', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+    ]);
 
-        $request->user()->save();
-
-        return Redirect::route('profile.edit');
+    // Mise à jour des informations de base
+    if ($request->has('name')) {
+        $user->name = $fields['name'];
     }
 
+    if ($request->has('email') && $user->email !== $fields['email']) {
+        $user->email = $fields['email'];
+        $user->email_verified_at = null;
+    }
+
+    // Gestion des rôles spécifiques
+    switch ($user->role) {
+        case 'investisseur':
+            $investisseur = Investisseur::updateOrCreate(
+                ['user_id' => $user->id],
+                ['visibility' => $request->input('visibility', null)]
+            );
+
+            if ($request->hasFile('profile_image')) {
+                $request->validate([
+                    'profile_image' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+                ]);
+
+                // Sauvegarde de la nouvelle image
+                $imageName = time() . '_' . $request->file('profile_image')->getClientOriginalName();
+                $request->file('profile_image')->storeAs('images', $imageName, 'public');
+
+                $investisseur->update(['profile_image' => $imageName]);
+            }
+            break;
+
+        case 'coach':
+            $coach = Coach::updateOrCreate(
+                ['user_id' => $user->id],
+                ['specialty' => $request->input('specialty', null)]
+            );
+
+            if ($request->hasFile('profile_image')) {
+                $request->validate([
+                    'profile_image' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+                ]);
+
+                $imageName = time() . '_' . $request->file('profile_image')->getClientOriginalName();
+                $request->file('profile_image')->storeAs('images', $imageName, 'public');
+
+                $coach->update(['profile_image' => $imageName]);
+            }
+            break;
+
+        case 'startup':
+            $startup = Startup::updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'domain_name' => $request->input('domain_name', null),
+                    'phone_number' => $request->input('phone_number', null),
+                ]
+            );
+
+            if ($request->hasFile('logo_startup')) {
+                $request->validate([
+                    'logo_startup' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+                ]);
+
+                $logoName = time() . '_' . $request->file('logo_startup')->getClientOriginalName();
+                $request->file('logo_startup')->storeAs('images', $logoName, 'public');
+
+                $startup->update(['logo_startup' => $logoName]);
+            }
+            break;
+    }
+
+    // Enregistrement des informations de l'utilisateur
+    $user->save();
+
+    return redirect()->route('profile.edit')->with('success', 'Informations mises à jour avec succès.');
+}
+
+    
+    
     /**
-     * Delete the user's account.
+     * Met à jour le mot de passe de l'utilisateur.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
      */
-    public function destroy(Request $request): RedirectResponse
+    public function updatePassword(Request $request)
+    {
+        $fields = $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', 'confirmed', 'min:3']
+        ]);
+
+        $request->user()->update([
+            'password' => Hash::make($fields['password'])
+        ]);
+
+        return redirect()->route('profile.edit');
+    }
+
+
+    /**
+     * Supprime le compte de l'utilisateur après validation du mot de passe.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function destroy(Request $request)
     {
         $request->validate([
-            'password' => ['required', 'current_password'],
+            'password' => ['required', 'current_password']
         ]);
 
         $user = $request->user();
@@ -61,82 +171,6 @@ class ProfileController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return Redirect::to('/');
+        return redirect()->route('home');
     }
-    public function updateProfile(Request $request)
-{
-    $user = Auth::user();
-
-    // Validation dynamique basée sur le rôle
-    $validationRules = $this->getValidationRules($user->role);
-    
-    // Valider les données de la requête
-    $request->validate($validationRules);
-
-    // Mettre à jour l'utilisateur
-    if ($user instanceof User) {
-        // Appel de la méthode update
-        $user->update($request->only(['name', 'email', 'visibility', 'specialty', 'domain_name']));
-    }
-    // Mettre à jour les champs spécifiques au rôle
-    switch ($user->role) {
-        case 'coach':
-            $coach = $user->coach;
-            $coach->update($request->only([
-                'phone_number', 'diploma', 'competence', 'description', 'profile_image', 'cover_image', 'pdf_document'
-            ]));
-            break;
-        case 'investisseur':
-            $investisseur = $user->investisseur;
-            $investisseur->update($request->only([
-                'video_presentation', 'description', 'website_link', 'social_links', 'profile_image', 'cover_image'
-            ]));
-            break;
-    }
-
-    return redirect()->route('profile.edit')->with('success', 'Profile updated successfully!');
-}
-
-/**
- * Get the validation rules based on the user's role.
- *
- * @param  string  $role
- * @return array
- */
-private function getValidationRules(string $role): array
-{
-    switch ($role) {
-        case 'coach':
-            return [
-                'name' => 'required|string|max:255',
-                'email' => 'required|email|max:255',
-                'phone_number' => 'nullable|string|max:20',
-                'diploma' => 'nullable|string|max:255',
-                'competence' => 'nullable|string',
-                'description' => 'nullable|string',
-                'profile_image' => 'nullable|image|max:1024',
-                'cover_image' => 'nullable|image|max:1024',
-                'pdf_document' => 'nullable|file|mimes:pdf|max:2048',
-            ];
-        
-        case 'investisseur':
-            return [
-                'name' => 'required|string|max:255',
-                'email' => 'required|email|max:255',
-                'video_presentation' => 'nullable|file|mimes:mp4,avi,mov|max:20480',
-                'description' => 'nullable|string',
-                'website_link' => 'nullable|url',
-                'social_links' => 'nullable|json',
-                'profile_image' => 'nullable|image|max:1024',
-                'cover_image' => 'nullable|image|max:1024',
-            ];
-
-        default:
-            return [
-                'name' => 'required|string|max:255',
-                'email' => 'required|email|max:255',
-            ];
-    }
-}
-
 }

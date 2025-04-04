@@ -10,7 +10,7 @@ class Coach extends Model
     use HasFactory;
     protected $table = 'coach';
 
-    protected $fillable = ['user_id', 'phone_number', 'diploma', 'competence', 'description', 'profile_image', 'cover_image', 'pdf_document'];
+    protected $fillable = ['user_id', 'phone_number', 'diploma', 'competence', 'description', 'profile_image', 'cover_image', 'pdf_document','specialty'];
 
     public function user()
     {
