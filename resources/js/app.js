@@ -1,35 +1,44 @@
-import "./bootstrap";
-import "../css/app.css";
+import './bootstrap'; 
+import { createApp } from 'vue'; 
+import { toast } from 'vue3-toastify'; 
+import 'vue3-toastify/dist/index.css';  
 
-import { createApp, h } from "vue";
-import { createInertiaApp, Head, Link } from "@inertiajs/vue3";
-import { ZiggyVue } from "../../vendor/tightenco/ziggy";
+import notifications from './components/notification/liste.vue';
+import notificationsNavbar from './components/notification/notifications.vue';
+import topsCards from './components/dashbord/top-cards.vue'; 
+import avancementsDash from './components/dashbord/avancements.vue'; 
+import listeFormations from './components/formation/liste.vue'; 
+import detailsFormation from './components/formation/details.vue'; 
+import addFormation from './components/formation/add.vue'; 
+import ListeAgentsIA from './components/agentsIA/liste.vue';  
+import addAgentsIA from './components/agentsIA/add.vue';
+import detailsAgentsIA from './components/agentsIA/details.vue';
 
-import Main from "./Layouts/Main.vue";
-import { setThemeOnLoad } from "./theme";
+// App principale
+const app = createApp({});  
+app.component('liste-notif', notifications); 
+app.component('top-cards-dashbord', topsCards); 
+app.component('avancements-dashbord', avancementsDash); 
+app.component('liste-formations', listeFormations); 
+app.component('details-formation', detailsFormation); 
+app.component('add-formation', addFormation);
+app.component('liste-agents-ia', ListeAgentsIA);  
+app.component('add-agent-ia', addAgentsIA); 
+app.component('details-agent-ia', detailsAgentsIA); 
 
-createInertiaApp({
-    title: (title) => `My App ${title}`,
-    resolve: (name) => {
-        const pages = import.meta.glob("./Pages/**/*.vue", { eager: true });
-        let page = pages[`./Pages/${name}.vue`];
-        
-        page.default.layout = page.default.layout || Main;
-        return page;
-    },
-    setup({ el, App, props, plugin }) {
-        createApp({ render: () => h(App, props) })
-            .use(plugin)
-            .use(ZiggyVue)
-            .component("Head", Head)
-            .component("Link", Link)
-            .mount(el);
-    },
-    progress: {
-        color: "#fff",
-        showSpinner: true,
-    },
-});
+// Ajout de toast global 
+app.config.globalProperties.$toast = Object.assign(toast, {   
+  success: (msg, opts) => toast(msg, { type: "success", ...opts }),   
+  error: (msg, opts) => toast(msg, { type: "error", ...opts }),   
+  info: (msg, opts) => toast(msg, { type: "info", ...opts }),   
+  warn: (msg, opts) => toast(msg, { type: "warn", ...opts }), 
+});  
+// Montages
+app.mount('#app');
+
+// Navbar à part
+const navbar = createApp({});
+navbar.component('notifications', notificationsNavbar);
 
 
-setThemeOnLoad()
+navbar.mount('#navbar-nav');

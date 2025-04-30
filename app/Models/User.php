@@ -122,4 +122,26 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(Like::class);
     }
+
+    public function forumParticipations()
+    {
+        return $this->hasMany(ForumParticipation::class);
+    }
+
+    public function participatedForums()
+    {
+        return $this->belongsToMany(Forum::class, 'forum_participations')
+                    ->withPivot('status')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Get the channels that model events should broadcast on.
+     *
+     * @return array<int, \Illuminate\Broadcasting\Channel|\Illuminate\Database\Eloquent\Model>
+     */
+    public function receivesBroadcastNotificationsOn(): string
+    {
+        return 'App.Models.User.' . $this->id;
+    }
 }

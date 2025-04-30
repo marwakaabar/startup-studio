@@ -18,11 +18,17 @@ class RegisterController extends Controller
      /**
      * Affiche la page d'inscription.
      *
-     * @return \Inertia\Response
+     * @return \Illuminate\View\View
      */
     public function create()
     {
-        return Inertia::render('Auth/Register');
+        // If the request wants JSON (from Inertia), render the Inertia page
+        if (request()->wantsJson() || request()->header('X-Inertia')) {
+            return Inertia::render('Auth/Register');
+        }
+        
+        // Otherwise, render the Blade view
+        return view('auth.register');
     }
 
 

@@ -73,9 +73,10 @@ class ProfileController extends Controller
                     'profile_image' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
                 ]);
 
-                // Sauvegarde de la nouvelle image
-                $imageName = time() . '_' . $request->file('profile_image')->getClientOriginalName();
-                $request->file('profile_image')->storeAs('images', $imageName, 'public');
+                // Sauvegarde de la nouvelle image sur S3
+                $image = $request->file('profile_image');
+                $imageName = time() . '_' . $image->hashName();
+                $image->storeAs('images', $imageName, 's3');
 
                 $investisseur->update(['profile_image' => $imageName]);
             }
@@ -92,8 +93,9 @@ class ProfileController extends Controller
                     'profile_image' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
                 ]);
 
-                $imageName = time() . '_' . $request->file('profile_image')->getClientOriginalName();
-                $request->file('profile_image')->storeAs('images', $imageName, 'public');
+                $image = $request->file('profile_image');
+                $imageName = time() . '_' . $image->hashName();
+                $image->storeAs('images', $imageName, 's3');
 
                 $coach->update(['profile_image' => $imageName]);
             }
@@ -113,10 +115,11 @@ class ProfileController extends Controller
                     'logo_startup' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
                 ]);
 
-                $logoName = time() . '_' . $request->file('logo_startup')->getClientOriginalName();
-                $request->file('logo_startup')->storeAs('images', $logoName, 'public');
+                $image = $request->file('logo_startup');
+                $imageName = time() . '_' . $image->hashName();
+                $image->storeAs('images', $imageName, 's3');
 
-                $startup->update(['logo_startup' => $logoName]);
+                $startup->update(['logo_startup' => $imageName]);
             }
             break;
     }

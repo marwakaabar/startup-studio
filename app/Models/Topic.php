@@ -39,6 +39,11 @@ class Topic extends Model
     {
         return $this->hasMany(Subscription::class);
     }
+
+    public function subscribers()
+    {
+        return $this->belongsToMany(User::class, 'subscriptions');
+    }
     
     public function hashtags()
     {
@@ -52,11 +57,26 @@ class Topic extends Model
 
     public function getLastPostAttribute()
     {
-        return $this->posts()->latest()->with('user')->first();
+        return $this->posts()->latest()->with('user')->first() ?? null;
     }
 
     public function incrementViewCount()
     {
         $this->increment('views_count');
+    }
+
+    public function scopeRecent($query)
+    {
+        return $query->orderBy('created_at', 'desc');
+    }
+
+    public function scopePopular($query)
+    {
+        return $query->orderBy('views_count', 'desc');
+    }
+
+    public function scopeUnanswered($query)
+    {
+        return $query->whereDoesntHave('posts');
     }
 }

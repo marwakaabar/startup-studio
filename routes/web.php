@@ -1,34 +1,65 @@
 <?php
 
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\ProfileController;
+use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AdminDashboardController;  
+use App\Http\Controllers\coachController;
+use App\Http\Controllers\Api\coach\TwoFactorController;
+// Route::middleware('guest')->group(function () {
 
-Route::middleware(['auth'])->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->middleware('verified')->name('dashboard');
+// //login
+// Route::get('/login', [coachController::class, 'login'])->name('login');
+// Route::get('/forgetPassword', [coachController::class, 'forgetPassword'])->name('forgot-password');
+// Route::get('/resetPassword', [coachController::class, 'resetPassword'])->name('resetPassword');
+// Route::get('/register', [coachController::class, 'register'])->name('register');
+// Route::get('/register/entreprise', [coachController::class, 'registerEntrprise'])->name('register-entreprise');
+// Route::get('/abonnements', [coachController::class, 'abonnements'])->name('abonnements');
+// });
 
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::post('/profile', [ProfileController::class, 'updateInfo'])->name('profile.info');
-    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::put('/profile', [ProfileController::class, 'updateProfile'])->name('profile.updateProfile');
+//notifications 
+Route::get('/notifications', [coachController::class, 'notifications'])->name('coach.notifications');
+//dashboard
+Route::get('/dashboard', [coachController::class, 'dashboard'])->name('coach.dashboard');
 
+//formation
+Route::prefix('formation')->group(function () {
+    Route::get('/', [coachController::class, 'formation'])->name('coach.formation');
+    Route::get('/details', [coachController::class, 'detailsFormation'])->name('coach.formation.details');
+    Route::get('/add', [coachController::class, 'addFormation'])->name('coach.formation.add');
 });
 
-Route::prefix('admin')->middleware(['auth', 'verified'])->name('admin.')->group(function () {
-    // Dashboard
-    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+//ressources
+Route::prefix('ressources')->group(function () {
+    Route::get('/', [coachController::class, 'ressources'])->name('coach.ressources');
+});
 
-    Route::prefix('users')->name('users.')->group(function () {
-        Route::get('/coachs', [AdminDashboardController::class, 'coachs'])->name('coachs');
-        Route::get('/investors', [AdminDashboardController::class, 'investors'])->name('investors');
-        Route::get('/startups', [AdminDashboardController::class, 'startups'])->name('startups');
-        Route::post('/approve-user/{id}', [AdminDashboardController::class, 'approve'])->name('users.approve-user');
-    });
+//forum
+Route::prefix('forum')->group(function () {
+    Route::get('/', [coachController::class, 'forum'])->name('coach.forum');
+});
+//messagerie
+Route::prefix('messagerie')->group(function () {
+    Route::get('/', [coachController::class, 'messagerie'])->name('coach.messagerie');
+});
+//calendrier
+Route::prefix('calendrier')->group(function () {
+    Route::get('/', [coachController::class, 'calendrier'])->name('coach.calendrier');
+});
+//agentIA
+Route::prefix('agentia')->group(function () {
+    Route::get('/', [coachController::class, 'agentia'])->name('coach.agentia');
+    Route::get('/details', [coachController::class, 'detailsAgentia'])->name('coach.agentia.details');
+    Route::get('/add', [coachController::class, 'addAgentia'])->name('coach.agentia.add');
+});
+//agent-ia-general
+Route::prefix('agent-ia-general')->group(function () {
+    Route::get('/', [coachController::class, 'agentIAgeneral'])->name('coach.agent-ia-general');
+});
+//setting
+Route::prefix('setting')->group(function () {
+    Route::get('/', [coachController::class, 'setting'])->name('coach.setting');
 });
 
 
-Route::inertia('/', 'Home')->name('home');
-require __DIR__ . '/auth.php';
 require __DIR__ . '/forum.php';
+require __DIR__ . '/auth.php';

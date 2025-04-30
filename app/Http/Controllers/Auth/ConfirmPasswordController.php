@@ -12,11 +12,16 @@ class ConfirmPasswordController extends Controller
     /**
      * Affiche la page de confirmation du mot de passe.
      *
-     * @return \Inertia\Response
+     * @return \Illuminate\View\View|\Inertia\Response
      */
     public function create()
     {
-        return Inertia::render('Auth/ConfirmPassword');
+        if (request()->wantsJson() || request()->header('X-Inertia')) {
+            return Inertia::render('Auth/ConfirmPassword');
+        }
+        
+        // Create a generic confirm password view if needed
+        return view('auth.passwords.confirm');
     }
 
 

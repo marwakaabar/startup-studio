@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers\Forum;
 
+use App\Models\ForumParticipation;
+use Illuminate\Support\Facades\Notification;
 use App\Models\Forum;
 use App\Models\Hashtag;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Storage;
+use App\Notifications\ParticipationRequestNotification;
+use App\Notifications\ParticipationResponseNotification;
 
 class ForumController extends Controller
 {
@@ -39,20 +43,40 @@ class ForumController extends Controller
     {
         foreach ($forums as $forum) {
             $user = $forum->user;
-            $forum->user_image = null;
+            $forum->user_image = $this->getUserProfileImage($user);
+        }
+    }
 
-            if ($user->isCoach()) {
-                $forum->user_image = $user->coach->profile_image ? Storage::url('images/' . $user->coach->profile_image) : asset('images/placeholder.png');
-            } elseif ($user->isStartup()) {
-                $forum->user_image = $user->startup->logo_startup ? Storage::url('images/' . $user->startup->logo_startup) : asset('images/placeholder.png');
-            } elseif ($user->isInvestisseur()) {
-                $forum->user_image = $user->investisseur->profile_image ? Storage::url('images/' . $user->investisseur->profile_image) : asset('images/placeholder.png');
-            } elseif ($user->isAdmin()) {
-                $forum->user_image = $user->admin->profile_image ? Storage::url($user->admin->profile_image) : asset('images/placeholder.png');
-            } else {
-                $forum->user_image = asset('images/placeholder.png');
+    /**
+     * Get user profile image with S3 temporary URL
+     * 
+     * @param \App\Models\User $user
+     * @return string
+     */
+    private function getUserProfileImage($user)
+    {
+        $imagePath = null;
+
+        if ($user->isCoach() && $user->coach->profile_image) {
+            $imagePath = 'images/' . $user->coach->profile_image;
+        } elseif ($user->isStartup() && $user->startup->logo_startup) {
+            $imagePath = 'images/' . $user->startup->logo_startup;
+        } elseif ($user->isInvestisseur() && $user->investisseur->profile_image) {
+            $imagePath = 'images/' . $user->investisseur->profile_image;
+        } elseif ($user->isAdmin() && $user->admin->profile_image) {
+            $imagePath = $user->admin->profile_image;
+        }
+
+        if ($imagePath) {
+            try {
+                return Storage::disk('s3')->temporaryUrl($imagePath, now()->addMinutes(30));
+            } catch (\Exception $e) {
+                \Log::error('S3 temporary URL error: ' . $e->getMessage());
             }
         }
+
+        // Fallback to default image if no image exists or error occurs
+        return "https://eu.ui-avatars.com/api/?background=D43347&color=fff&bold=true&name=" . urlencode($user->name);
     }
 
     public function create()
@@ -80,8 +104,10 @@ class ForumController extends Controller
 
         // Gérer l'upload de l'image
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('forums', 'public');
-            $forumData['image'] = $path;
+            $image = $request->file('image');
+            $imageName = $image->hashName();
+            $image->storeAs('forums', $imageName, 's3');
+            $forumData['image'] = 'forums/' . $imageName;
         }
 
         $forum = Forum::create($forumData);
@@ -117,12 +143,17 @@ class ForumController extends Controller
 
         foreach ($topics as $topic) {
             $user = $topic->user;
-            $topic->user_image = $this->getUserImage($user);
+            $topic->user_image = $this->getUserProfileImage($user);
         }
 
         // Correction du chemin de l'image
         if ($forum->image) {
-            $forum->image = Storage::url($forum->image);
+            try {
+                $forum->image = Storage::disk('s3')->temporaryUrl($forum->image, now()->addMinutes(30));
+            } catch (\Exception $e) {
+                \Log::error('S3 temporary URL error for forum image: ' . $e->getMessage());
+                $forum->image = null;
+            }
         }
 
         return Inertia::render('Forums/Show', [
@@ -132,20 +163,6 @@ class ForumController extends Controller
             'currentPage' => $topics->currentPage(),
             'lastPage' => $topics->lastPage(),
         ]);
-    }
-
-    private function getUserImage($user)
-    {
-        if ($user->isCoach()) {
-            return $user->coach->profile_image ? Storage::url('images/' . $user->coach->profile_image) : asset('images/placeholder.png');
-        } elseif ($user->isStartup()) {
-            return $user->startup->logo_startup ? Storage::url('images/' . $user->startup->logo_startup) : asset('images/placeholder.png');
-        } elseif ($user->isInvestisseur()) {
-            return $user->investisseur->profile_image ? Storage::url('images/' . $user->investisseur->profile_image) : asset('images/placeholder.png');
-        } elseif ($user->isAdmin()) {
-            return $user->admin->profile_image ? Storage::url($user->admin->profile_image) : asset('images/placeholder.png');
-        }
-        return asset('images/placeholder.png');
     }
 
     public function search(Request $request)
@@ -200,5 +217,90 @@ class ForumController extends Controller
             'lastPage' => $forums->lastPage(),
         ]);
     }
+
+
+    public function requestParticipation(Forum $forum)
+    {
+        try {
+            $user = auth()->user();
+
+            // Check if user is not the forum creator
+            if ($forum->user_id === $user->id) {
+                return response()->json(['message' => 'Vous ne pouvez pas demander à participer à votre propre forum'], 400);
+            }
+
+            // Check if request already exists
+            $existingRequest = ForumParticipation::where('forum_id', $forum->id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if ($existingRequest) {
+                return response()->json(['message' => 'Demande déjà envoyée'], 400);
+            }
+
+            // Create participation request
+            $participation = ForumParticipation::create([
+                'forum_id' => $forum->id,
+                'user_id' => $user->id,
+                'status' => 'pending'
+            ]);
+
+            // Send notification to forum owner
+            $forum->user->notify(new ParticipationRequestNotification($forum, $user));
+
+            return response()->json(['message' => 'Demande envoyée avec succès', 'status' => 'pending']);
+            
+        } catch (\Exception $e) {
+            \Log::error('Forum participation request error: ' . $e->getMessage());
+            return response()->json(['message' => 'Une erreur est survenue'], 500);
+        }
+    }
+  
+    /**
+     * Respond to a participation request.
+     *
+     * @param Request $request
+     * @param Forum $forum
+     * @return \Illuminate\Http\JsonResponse
+     */
+
+    public function respondToParticipation(Request $request, Forum $forum)
+    {
+        try {
+            $request->validate([
+                'status' => 'required|in:accepted,rejected'
+            ]);
+
+            // Trouver la participation sans utiliser user_id de la requête
+            $participation = ForumParticipation::where('forum_id', $forum->id)
+                ->where('status', 'pending')
+                ->latest()
+                ->firstOrFail();
+
+            $participation->update(['status' => $request->status]);
+
+            // Envoyer une notification à l'utilisateur
+            $participation->user->notify(new ParticipationResponseNotification($participation));
+
+            return response()->json([
+                'message' => 'Réponse envoyée avec succès',
+                'status' => $request->status
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Forum participation response error: ' . $e->getMessage());
+            return response()->json(['message' => 'Une erreur est survenue'], 500);
+        }
+    }
+
+    public function getParticipationStatus(Forum $forum)
+    {
+        $participation = ForumParticipation::where('forum_id', $forum->id)
+            ->where('user_id', auth()->id())
+            ->first();
+
+        return response()->json(['status' => $participation ? $participation->status : null]);
+    }
+
+   
 
 }

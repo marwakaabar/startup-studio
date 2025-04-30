@@ -12,11 +12,17 @@ class EmailVerificationController extends Controller
     /**
      * Affiche la notification demandant à l'utilisateur de vérifier son e-mail.
      *
-     * @return \Inertia\Response
+     * @return \Illuminate\View\View|\Inertia\Response
      */
     public function notice()
     {
-        return Inertia::render('Auth/VerifyEmail', [
+        if (request()->wantsJson() || request()->header('X-Inertia')) {
+            return Inertia::render('Auth/VerifyEmail', [
+                'status' => session('status')
+            ]);
+        }
+        
+        return view('auth.verifyemail', [
             'status' => session('status')
         ]);
     }

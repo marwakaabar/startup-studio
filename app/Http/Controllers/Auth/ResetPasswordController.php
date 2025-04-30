@@ -16,13 +16,17 @@ class ResetPasswordController extends Controller
      /**
      * Affiche la page de demande de réinitialisation du mot de passe.
      * 
-     * @return \Inertia\Response
+     * @return \Illuminate\View\View|\Inertia\Response
      */
     public function requestPass()
     {
-        return Inertia::render('Auth/ForgotPassword', [
-            'status' => session('status')
-        ]);
+        if (request()->wantsJson() || request()->header('X-Inertia')) {
+            return Inertia::render('Auth/ForgotPassword', [
+                'status' => session('status')
+            ]);
+        }
+        
+        return view('auth.forget-password');
     }
 
     /**
@@ -48,11 +52,18 @@ class ResetPasswordController extends Controller
      * Affiche le formulaire de réinitialisation du mot de passe.
      * 
      * @param  \Illuminate\Http\Request  $request
-     * @return \Inertia\Response
+     * @return \Illuminate\View\View|\Inertia\Response
      */
     public function resetForm(Request $request)
     {
-        return Inertia::render('Auth/ResetPassword', [
+        if (request()->wantsJson() || request()->header('X-Inertia')) {
+            return Inertia::render('Auth/ResetPassword', [
+                'email' => $request->email,
+                'token' => $request->route('token')
+            ]);
+        }
+        
+        return view('auth.reset-password', [
             'email' => $request->email,
             'token' => $request->route('token')
         ]);

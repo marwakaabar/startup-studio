@@ -36,21 +36,27 @@ class Post extends Model
         return $this->hasMany(Comment::class);
     }
 
-    public function likes()
+    public function reactions()
     {
-        return $this->morphMany(Like::class, 'likeable');
+        return $this->morphMany(Reaction::class, 'reactionable');
     }
 
-    protected $appends = ['likes_count', 'is_liked'];
+    protected $appends = ['reactions_count', 'user_reaction'];
 
-    public function getLikesCountAttribute()
+    public function getReactionsCountAttribute()
     {
-        return $this->likes()->count();
+        return $this->reactions()
+            ->selectRaw('type, count(*) as count')
+            ->groupBy('type')
+            ->get()
+            ->pluck('count', 'type');
     }
 
-    public function getIsLikedAttribute()
+    public function getUserReactionAttribute()
     {
-        return $this->likes()->isLikedBy(auth()->id())->exists();
+        return $this->reactions()
+            ->where('user_id', auth()->id())
+            ->value('type');
     }
 
     public function hashtags()
@@ -58,5 +64,20 @@ class Post extends Model
         return $this->morphToMany(Hashtag::class, 'hashtagable');
     }
 
+    public function reports()
+    {
+        return $this->morphMany(Report::class, 'reportable');
+    }
+    
+    // Relation pour la modération de contenu
+    public function moderatedContents()
+    {
+        return $this->morphMany(ModeratedContent::class, 'moderatable');
+    }
 
+    // Méthode pour vérifier si le contenu est toxique
+    public function checkModeration()
+    {
+        return $this->moderatedContents()->latest()->first();
+    }
 }

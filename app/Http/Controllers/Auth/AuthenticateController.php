@@ -12,21 +12,26 @@ class AuthenticateController extends Controller
     /**
      * Affiche la page de connexion.
      *
-     * @return \Inertia\Response
+     * @return \Inertia\Response|\Illuminate\View\View
      */
-
     public function create()
     {
-        return Inertia::render('Auth/Login', [
-            'status' => session('status')
-        ]);
+        // If the request wants JSON (from Inertia), render the Inertia page
+        if (request()->wantsJson() || request()->header('X-Inertia')) {
+            return Inertia::render('Auth/Login', [
+                'status' => session('status')
+            ]);
+        }
+        
+        // Otherwise, render the Blade view
+        return view('auth.login');
     }
 
     /**
      * Gère l'authentification de l'utilisateur.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
     public function store(Request $request)
     {
@@ -60,8 +65,16 @@ class AuthenticateController extends Controller
             return redirect()->intended('dashboard');//redirection vers dashboard user
         }
         
+        if ($request->wantsJson() || $request->header('X-Inertia')) {
+            return response()->json([
+                'errors' => [
+                    'email' => [__('Les identifiants fournis ne correspondent pas à nos enregistrements.')]
+                ]
+            ], 422);
+        }
+        
         return back()->withErrors([
-            'email' => 'The provided credentials do not match our records.'
+            'email' => 'Les identifiants fournis ne correspondent pas à nos enregistrements.'
         ])->onlyInput('email');
     }
 

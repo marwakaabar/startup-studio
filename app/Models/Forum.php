@@ -33,6 +33,18 @@ class Forum extends Model
         return $this->morphToMany(Hashtag::class,'hashtagable');
     }
 
+    public function participations()
+    {
+        return $this->hasMany(ForumParticipation::class);
+    }
+
+    public function participants()
+    {
+        return $this->belongsToMany(User::class, 'forum_participations')
+                    ->withPivot('status')
+                    ->withTimestamps();
+    }
+
     //accesseur pour le comptage des topics.
     public function getTopicsCountAttribute()
     {
