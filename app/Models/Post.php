@@ -13,7 +13,8 @@ class Post extends Model
         'content',
         'user_id',
         'topic_id',
-        'is_best_answer'
+        'is_best_answer',
+        'views_count'  // Add this
     ];
 
     protected $casts = [

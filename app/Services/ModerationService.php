@@ -162,11 +162,20 @@ class ModerationService
      * @param string $originalContent Contenu original
      * @param array $result Résultat de la modération
      * @param int $userId ID de l'utilisateur
-     * @return ModeratedContent
+     * @return ModeratedContent|null
      */
-    public function saveModeration($contentType, $contentId, $originalContent, $result, $userId): ModeratedContent
+    public function saveModeration($contentType, $contentId, $originalContent, $result, $userId): ?ModeratedContent
     {
         $moderatedContent = null;
+        
+        // Définir les seuils de gravité
+        $seuilGrave = $this->blockThreshold; // 0.9 par défaut
+        $seuilMoyen = $this->actionThreshold; // 0.7 par défaut
+        
+        // Ne sauvegarder que les contenus avec un niveau de toxicité moyen ou grave
+        if (!isset($result['most_toxic_score']) || $result['most_toxic_score'] < $seuilMoyen) {
+            return null;
+        }
         
         if ($result['action'] === 'modify') {
             $moderatedContent = $this->sanitizeContent($originalContent);

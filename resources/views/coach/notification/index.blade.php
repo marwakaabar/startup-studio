@@ -1,4 +1,4 @@
-@extends('coach.layouts.fullwidth2')
+@extends('layouts.fullwidth2')
 @section('title')
 Notifications
 @endsection

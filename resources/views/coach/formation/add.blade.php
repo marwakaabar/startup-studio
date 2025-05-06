@@ -1,4 +1,4 @@
-@extends('coach.layouts.general')
+@extends('layouts.general')
 @section('title')
 Créer une formation
 @endsection

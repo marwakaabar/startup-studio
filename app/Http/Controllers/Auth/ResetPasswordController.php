@@ -9,24 +9,20 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
-use Inertia\Inertia;
+use Illuminate\Support\Facades\Log;
 
 class ResetPasswordController extends Controller
 {
      /**
      * Affiche la page de demande de réinitialisation du mot de passe.
      * 
-     * @return \Illuminate\View\View|\Inertia\Response
+     * @return \Illuminate\View\View
      */
     public function requestPass()
     {
-        if (request()->wantsJson() || request()->header('X-Inertia')) {
-            return Inertia::render('Auth/ForgotPassword', [
-                'status' => session('status')
-            ]);
-        }
-        
-        return view('auth.forget-password');
+        return view('auth.forget-password', [
+            'status' => session('status')
+        ]);
     }
 
     /**
@@ -43,8 +39,16 @@ class ResetPasswordController extends Controller
             $request->only('email')
         );
 
+        // Si c'est une requête AJAX, renvoyer une réponse JSON
+        if ($request->expectsJson()) {
+            return response()->json([
+                'status' => $status === Password::RESET_LINK_SENT ? 'success' : 'error',
+                'message' => __($status)
+            ]);
+        }
+
         return $status === Password::RESET_LINK_SENT
-            ? back()->with(['status' => __($status)])
+            ? back()->with('status', __($status))
             : back()->withErrors(['email' => __($status)]);
     }
 
@@ -52,20 +56,14 @@ class ResetPasswordController extends Controller
      * Affiche le formulaire de réinitialisation du mot de passe.
      * 
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\View\View|\Inertia\Response
+     * @param  string  $token
+     * @return \Illuminate\View\View
      */
-    public function resetForm(Request $request)
+    public function resetForm(Request $request, $token)
     {
-        if (request()->wantsJson() || request()->header('X-Inertia')) {
-            return Inertia::render('Auth/ResetPassword', [
-                'email' => $request->email,
-                'token' => $request->route('token')
-            ]);
-        }
-        
         return view('auth.reset-password', [
             'email' => $request->email,
-            'token' => $request->route('token')
+            'token' => $token
         ]);
     }
 
@@ -81,7 +79,13 @@ class ResetPasswordController extends Controller
         $request->validate([
             'token' => 'required',
             'email' => 'required|email',
-            'password' => 'required|min:3|confirmed',
+            'password' => 'required|min:6|confirmed',
+        ]);
+
+        // Pour le débogage
+        Log::info('Reset password data received', [
+            'email' => $request->email,
+            'token_length' => strlen($request->token)
         ]);
 
         $status = Password::reset(
@@ -92,11 +96,43 @@ class ResetPasswordController extends Controller
                 ])->setRememberToken(Str::random(60));
 
                 $user->save();
+
+                event(new PasswordReset($user));
+                
+                // Pour le débogage
+                Log::info('Password reset successfully for user', [
+                    'user_id' => $user->id,
+                    'email' => $user->email
+                ]);
             }
         );
 
-        return $status === Password::PASSWORD_RESET
-            ? redirect()->route('login')->with('status', __($status))
-            : back()->withErrors(['email' => [__($status)]]);
+        if ($status === Password::PASSWORD_RESET) {
+            // Si c'est une requête AJAX, renvoyer une réponse JSON
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'La réinitialisation de votre mot de passe a réussi.'
+                ]);
+            }
+            
+            return redirect()->route('login')->with('status', __('La réinitialisation de votre mot de passe a réussi.'));
+        }
+        
+        // Pour le débogage
+        Log::warning('Password reset failed', [
+            'status' => $status,
+            'email' => $request->email
+        ]);
+
+        // Si c'est une requête AJAX, renvoyer une réponse JSON
+        if ($request->expectsJson()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __($status)
+            ], 400);
+        }
+
+        return back()->withErrors(['email' => [__($status)]]);
     }
 }

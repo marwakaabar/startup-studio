@@ -13,10 +13,10 @@ class ReactionController extends Controller
     public function toggle(Request $request)
     {
         $request->validate([
-            'type' => 'required|string',
             'reactable_type' => 'required|in:Post,Comment',
             'reactable_id' => 'required|integer',
-            'reaction' => 'required|string'
+            'type' => 'string|nullable',
+            'reaction' => 'string|nullable'
         ]);
 
         $model = $request->reactable_type === 'Post' ? Post::class : Comment::class;
@@ -26,30 +26,34 @@ class ReactionController extends Controller
             ->where('user_id', auth()->id())
             ->first();
 
-        if ($existingReaction) {
-            if ($existingReaction->type === $request->reaction) {
+        // Si type est null, on supprime la réaction
+        if (!$request->type) {
+            if ($existingReaction) {
                 $existingReaction->delete();
-                $message = 'Reaction removed';
-            } else {
-                $existingReaction->update(['type' => $request->reaction]);
-                $message = 'Reaction updated';
             }
         } else {
-            $reactable->reactions()->create([
-                'user_id' => auth()->id(),
-                'type' => $request->reaction
-            ]);
-            $message = 'Reaction added';
+            if ($existingReaction) {
+                if ($existingReaction->type === $request->type) {
+                    $existingReaction->delete();
+                } else {
+                    $existingReaction->update(['type' => $request->type]);
+                }
+            } else {
+                $reactable->reactions()->create([
+                    'user_id' => auth()->id(),
+                    'type' => $request->type
+                ]);
+            }
         }
 
         $reactionCounts = $reactable->reactions()
             ->selectRaw('type, count(*) as count')
             ->groupBy('type')
-            ->get()
-            ->pluck('count', 'type');
+            ->pluck('count', 'type')
+            ->toArray();
 
         return response()->json([
-            'message' => $message,
+            'success' => true,
             'reactions' => $reactionCounts
         ]);
     }

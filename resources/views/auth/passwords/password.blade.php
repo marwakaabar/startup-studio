@@ -1,4 +1,4 @@
-@extends('coach.layouts.fullwidth')
+@extends('layouts.fullwidth')
 @section('title')
 Définir un mot de passe
 @endsection

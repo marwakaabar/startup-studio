@@ -15,36 +15,75 @@ use App\Notifications\ParticipationResponseNotification;
 
 class ForumController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $userId = auth()->id();
-        
-        $myForums = Forum::with(['user.coach', 'user.startup', 'user.investisseur', 'hashtags'])
-            ->where('user_id', $userId)
-            ->get();
+        $query = $request->input('query');
+        $category = $request->input('category');
+        $sortBy = $request->input('sortBy', 'recent');
+        $perPage = 6;
 
-        $otherForums = Forum::with(['user.coach', 'user.startup', 'user.investisseur', 'hashtags'])
-            ->where('user_id', '!=', $userId)
-            ->paginate(5);
+        $baseQuery = Forum::with(['user', 'hashtags', 'topics']);
 
-        $this->processForumImages($myForums);
-        $this->processForumImages($otherForums);
+        if ($query) {
+            $baseQuery->where(function($q) use ($query) {
+                $q->where('name', 'like', "%{$query}%")
+                  ->orWhere('description', 'like', "%{$query}%");
+            });
+        }
 
-        return Inertia::render('Forums/Index', [
-            'myForums' => $myForums,
-            'otherForums' => $otherForums->items(),
-            'total' => $otherForums->total(),
-            'currentPage' => $otherForums->currentPage(),
-            'lastPage' => $otherForums->lastPage(),
-        ]);
+        if ($category) {
+            $baseQuery->where('category', $category);
+        }
+
+        switch ($sortBy) {
+            case 'popular':
+                $baseQuery->orderBy('views_count', 'desc');
+                break;
+            case 'comments':
+                $baseQuery->withCount('topics')->orderBy('topics_count', 'desc');
+                break;
+            default:
+                $baseQuery->orderBy('created_at', 'desc');
+        }
+
+        $myForums = clone $baseQuery;
+        $otherForums = clone $baseQuery;
+
+        $myForums = $myForums->where('user_id', $userId)->get();
+        $otherForums = $otherForums->where('user_id', '!=', $userId)->get();
+
+        // Process images for both collections
+        $myForums = $this->processForumImages($myForums);
+        $otherForums = $this->processForumImages($otherForums);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'myForums' => $myForums,
+                'otherForums' => $otherForums
+            ]);
+        }
+
+        return view('startup.forum.index', compact('myForums', 'otherForums'));
     }
 
     private function processForumImages($forums)
     {
-        foreach ($forums as $forum) {
-            $user = $forum->user;
-            $forum->user_image = $this->getUserProfileImage($user);
-        }
+        return $forums->map(function($forum) {
+            if ($forum->image) {
+                try {
+                    $forum->image = Storage::disk('s3')->temporaryUrl($forum->image, now()->addMinutes(30));
+                } catch (\Exception $e) {
+                    $forum->image = null;
+                }
+            }
+
+            if (!$forum->image) {
+                $forum->image = "https://eu.ui-avatars.com/api/?background=0093ee&color=fff&bold=true&name=" . urlencode($forum->name);
+            }
+
+            return $forum;
+        });
     }
 
     /**
@@ -81,7 +120,7 @@ class ForumController extends Controller
 
     public function create()
     {
-        return Inertia::render('Forums/Create');
+        return view('startup.forum.add');
     }
 
     public function store(Request $request)
@@ -130,38 +169,22 @@ class ForumController extends Controller
     }
 
     public function show(Forum $forum)
-    {   
-        // Incrémenter le compteur de vues uniquement si l'utilisateur n'a pas déjà vu le topic
-        $sessionKey = 'topic_viewed_' . $forum->id;
-        if (!session()->has($sessionKey)) {
-            $forum->incrementViewCount();
-            session()->put($sessionKey, true);
-        }        
+    {
         $topics = $forum->topics()
-            ->with(['user.coach', 'user.startup', 'user.investisseur'])
-            ->paginate(10);
+            ->with(['user', 'posts', 'hashtags'])
+            ->latest()
+            ->get();
 
-        foreach ($topics as $topic) {
-            $user = $topic->user;
-            $topic->user_image = $this->getUserProfileImage($user);
+        if (request()->wantsJson()) {
+            return response()->json([
+                'forum' => $forum,
+                'topics' => $topics
+            ]);
         }
 
-        // Correction du chemin de l'image
-        if ($forum->image) {
-            try {
-                $forum->image = Storage::disk('s3')->temporaryUrl($forum->image, now()->addMinutes(30));
-            } catch (\Exception $e) {
-                \Log::error('S3 temporary URL error for forum image: ' . $e->getMessage());
-                $forum->image = null;
-            }
-        }
-
-        return Inertia::render('Forums/Show', [
+        return view('startup.Forum.show', [
             'forum' => $forum,
-            'topics' => $topics->items(),
-            'total' => $topics->total(),
-            'currentPage' => $topics->currentPage(),
-            'lastPage' => $topics->lastPage(),
+            'topics' => $topics
         ]);
     }
 
@@ -301,6 +324,5 @@ class ForumController extends Controller
         return response()->json(['status' => $participation ? $participation->status : null]);
     }
 
-   
 
 }

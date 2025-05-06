@@ -5,33 +5,26 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
 
 class AuthenticateController extends Controller
 {
     /**
      * Affiche la page de connexion.
      *
-     * @return \Inertia\Response|\Illuminate\View\View
+     * @return \Illuminate\View\View
      */
     public function create()
     {
-        // If the request wants JSON (from Inertia), render the Inertia page
-        if (request()->wantsJson() || request()->header('X-Inertia')) {
-            return Inertia::render('Auth/Login', [
-                'status' => session('status')
-            ]);
-        }
-        
-        // Otherwise, render the Blade view
-        return view('auth.login');
+        return view('auth.login', [
+            'status' => session('status')
+        ]);
     }
 
     /**
      * Gère l'authentification de l'utilisateur.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
     {
@@ -49,32 +42,44 @@ class AuthenticateController extends Controller
             if (!$user->approved) {
                 Auth::logout(); // Déconnecte immédiatement l'utilisateur
 
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Votre compte n\'est pas encore activé. Veuillez contacter l\'administrateur pour plus d\'informations.'
+                    ], 403);
+                }
+
                 return back()->withErrors([
-                    'email' => 'Votre compte n\'a pas encore été activé par l\'administrateur.'
+                    'email' => 'Votre compte n\'est pas encore activé. Veuillez contacter l\'administrateur pour plus d\'informations.'
                 ])->onlyInput('email');
             }
             
             // Régénération de la session pour éviter les attaques de fixation de session
             $request->session()->regenerate();
 
-            // Vérification du rôle de l'utilisateur pour redirection
-            if (Auth::user()->role === 'admin') {
-                return redirect()->route('admin.dashboard');//redirection vers dashboard admin
+            // Si c'est une requête AJAX, renvoyer une réponse JSON
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Connexion réussie',
+                    'redirect' => route('dashboard')
+                ]);
             }
-            
-            return redirect()->intended('dashboard');//redirection vers dashboard user
+
+            // Redirection vers la route de redirection qui gère tous les cas
+            return redirect()->route('redirect');
         }
         
-        if ($request->wantsJson() || $request->header('X-Inertia')) {
+        // Si c'est une requête AJAX, renvoyer une réponse JSON
+        if ($request->expectsJson()) {
             return response()->json([
-                'errors' => [
-                    'email' => [__('Les identifiants fournis ne correspondent pas à nos enregistrements.')]
-                ]
-            ], 422);
+                'success' => false,
+                'message' => 'Identifiant ou mot de passe incorrect.'
+            ], 401);
         }
         
         return back()->withErrors([
-            'email' => 'Les identifiants fournis ne correspondent pas à nos enregistrements.'
+            'email' => 'Identifiant ou mot de passe incorrect.'
         ])->onlyInput('email');
     }
 
@@ -92,6 +97,15 @@ class AuthenticateController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('home');
+        // Si c'est une requête AJAX, renvoyer une réponse JSON
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Déconnexion réussie',
+                'redirect' => route('login')
+            ]);
+        }
+
+        return redirect()->route('login');
     }
 }

@@ -8,6 +8,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Storage;
+use App\Notifications\CustomVerifyEmail;
+use App\Notifications\CustomResetPassword;
 
 
 class User extends Authenticatable implements MustVerifyEmail
@@ -50,6 +52,36 @@ class User extends Authenticatable implements MustVerifyEmail
             'approved' => 'boolean',
         ];
     }
+    
+    /**
+     * Accesseur pour récupérer l'image de profil de l'utilisateur selon son rôle
+     */
+    public function getProfileImageAttribute()
+    {
+        $imagePath = null;
+
+        if ($this->isCoach() && $this->coach && $this->coach->profile_image) {
+            $imagePath = 'images/' . $this->coach->profile_image;
+        } elseif ($this->isStartup() && $this->startup && $this->startup->logo_startup) {
+            $imagePath = 'images/' . $this->startup->logo_startup;
+        } elseif ($this->isInvestisseur() && $this->investisseur && $this->investisseur->profile_image) {
+            $imagePath = 'images/' . $this->investisseur->profile_image;
+        } elseif ($this->isAdmin() && $this->admin && $this->admin->profile_image) {
+            $imagePath = $this->admin->profile_image;
+        }
+
+        if ($imagePath) {
+            try {
+                return Storage::disk('s3')->temporaryUrl($imagePath, now()->addMinutes(30));
+            } catch (\Exception $e) {
+                \Log::error('S3 temporary URL error: ' . $e->getMessage());
+            }
+        }
+
+        // Fallback to default image if no image exists or error occurs
+        return "https://eu.ui-avatars.com/api/?background=D43347&color=fff&bold=true&name=" . urlencode($this->name);
+    }
+    
     public function startup(): HasOne
     {
         return $this->hasOne(Startup::class);
@@ -143,5 +175,26 @@ class User extends Authenticatable implements MustVerifyEmail
     public function receivesBroadcastNotificationsOn(): string
     {
         return 'App.Models.User.' . $this->id;
+    }
+
+    /**
+     * Send the email verification notification.
+     *
+     * @return void
+     */
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new CustomVerifyEmail);
+    }
+
+    /**
+     * Send the password reset notification.
+     *
+     * @param  string  $token
+     * @return void
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new CustomResetPassword($token));
     }
 }

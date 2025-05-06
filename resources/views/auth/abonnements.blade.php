@@ -1,4 +1,4 @@
-@extends('coach.layouts.fullwidth')
+@extends('layouts.fullwidth')
 @section('title')
 Changer forfait
 @endsection
@@ -57,7 +57,7 @@ Changer forfait
                     </p>
                 </div>
                 <div class="card-footer d-flex justify-content-center">
-                    <a href="#" class="btn btn-secondary">Commencer gratuitement</a>
+                    <a href="{{ route('admin.dashboard') }}" class="btn btn-secondary">Commencer gratuitement</a>
                 </div>
             </div>
         </div>
@@ -113,7 +113,7 @@ Changer forfait
                     </p>
                 </div>
                 <div class="card-footer d-flex justify-content-center">
-                    <a href="#" class="btn btn-secondary">Acheter</a>
+                    <a href="{{ route('admin.dashboard') }}" class="btn btn-secondary">Acheter</a>
                 </div>
             </div>
         </div>

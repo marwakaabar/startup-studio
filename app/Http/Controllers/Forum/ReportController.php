@@ -70,12 +70,10 @@ class ReportController extends Controller
     public function index()
     {
         $reports = Report::with(['user', 'reportable.user'])
-            ->latest()
+            ->orderBy('created_at', 'desc')
             ->get();
 
-        return response()->json([
-            'reports' => $reports
-        ]);
+        return view('admin.Reports.reports', compact('reports'));
     }
 
     public function update(Report $report, Request $request)

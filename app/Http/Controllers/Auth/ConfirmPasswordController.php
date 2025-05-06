@@ -5,23 +5,17 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Inertia\Inertia;
 
 class ConfirmPasswordController extends Controller
 {
     /**
      * Affiche la page de confirmation du mot de passe.
      *
-     * @return \Illuminate\View\View|\Inertia\Response
+     * @return \Illuminate\View\View
      */
     public function create()
     {
-        if (request()->wantsJson() || request()->header('X-Inertia')) {
-            return Inertia::render('Auth/ConfirmPassword');
-        }
-        
-        // Create a generic confirm password view if needed
-        return view('auth.passwords.confirm');
+        return view('auth.confirm-password');
     }
 
 

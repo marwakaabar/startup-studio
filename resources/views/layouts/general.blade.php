@@ -112,14 +112,24 @@
         <div class="layout-container">
             <!-- Menu -->
 
-            @include('coach.layouts.sidebar')
+            @if(auth()->check())
+                @if(auth()->user()->role == 'coach')
+                    @include('layouts.partials.sidebar.coach')
+                @elseif(auth()->user()->role == 'admin')
+                    @include('layouts.partials.sidebar.admin')
+                @elseif(auth()->user()->role == 'startup')
+                    @include('layouts.partials.sidebar.startup')
+                @elseif(auth()->user()->role == 'investisseur')
+                    @include('layouts.partials.sidebar.investisseur')
+                @endif
+            @endif
             <!-- / Menu -->
 
             <!-- Layout container -->
             <div class="layout-page">
                 <!-- Navbar -->
 
-                @include('coach.layouts.navbar')
+                @include('layouts.partials.navbar')
 
                 <!-- / Navbar -->
                 <!-- Content wrapper -->
@@ -196,7 +206,6 @@
 
         })
     </script>
-
 
     @yield('script')
 </body>

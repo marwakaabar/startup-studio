@@ -32,7 +32,7 @@ class coachController extends Controller
      //reset password
      public function resetPassword()
      {
-         return view('auth.reset-password');
+         return view('auth.reset');
      }
       //notifications
       public function notifications()

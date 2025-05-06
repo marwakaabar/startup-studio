@@ -28,14 +28,14 @@
             <!-- / robot-->
 
             <!-- Notification -->
-            <notifications></notifications>
+            <notifications :user="{{ json_encode(auth()->user()) }}"></notifications>
             <!--/ Notification -->
 
             <!-- User -->
             <li class="nav-item navbar-dropdown dropdown-user dropdown mt-0" style="margin-top: 0px !important;">
                 <a class="nav-link dropdown-toggle hide-arrow btn-profil" href="javascript:void(0);"
                     data-bs-toggle="dropdown">
-                    <img src="{{ asset('assets/img/dash/entreprise.png') }}" alt="">
+                    <img src="{{ auth()->user()->profile_image }}" alt="{{ auth()->user()->name }}" class="rounded-0" style=" object-fit: cover;">
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end">
                     <li>
@@ -47,13 +47,15 @@
                         </a>
                     </li>
                     <li>
-                        <a class="dropdown-item text-start" href=""  data-bs-toggle="modal"
-                        data-bs-target="#outModal">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
-                                <path d="M9.996 19H3C1.895 19 1 17.849 1 16.429V3.57C1 2.151 1.895 1 3 1H10M12.5 13.5L16 10L12.5 6.5M6 9.996H16" stroke="#474747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
-                            <span class="">Déconnexion</span>
-                        </a>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" class="dropdown-item text-start">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="20" viewBox="0 0 17 20" fill="none">
+                                    <path d="M9.996 19H3C1.895 19 1 17.849 1 16.429V3.57C1 2.151 1.895 1 3 1H10M12.5 13.5L16 10L12.5 6.5M6 9.996H16" stroke="#474747" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <span class="">Déconnexion</span>
+                            </button>
+                        </form>
                     </li>
                 </ul>
             </li>

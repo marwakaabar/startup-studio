@@ -6,7 +6,6 @@ use App\Models\Comment;
 use App\Models\Post;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use App\Http\Controllers\Controller;
 use App\Notifications\NewTopicActivityNotification;
 use App\Services\ModerationService;
@@ -78,11 +77,10 @@ class CommentController extends Controller
         });
 
         // Charger l'utilisateur et ses relations
-        $comment->load('user');
+        $comment->load(['user']);
         
         // Ajouter l'image de profil
-        $user = $comment->user;
-        $comment->image = $this->getUserProfileImage($user);
+        $comment->user_image = $this->getUserProfileImage($comment->user);
         
         $response = [
             'success' => true,
@@ -150,15 +148,13 @@ class CommentController extends Controller
         );
 
         // Recharger le commentaire avec l'utilisateur
-        $comment->load('user');
-        
-        // Ajouter l'image de profil
-        $user = $comment->user;
-        $comment->image = $this->getUserProfileImage($user);
-        
+        $comment->load(['user']);
+        $comment->user_image = $this->getUserProfileImage($comment->user);
+
         $response = [
             'success' => true,
-            'comment' => $comment
+            'comment' => $comment,
+            'message' => 'Commentaire modifié avec succès'
         ];
         
         // Ajouter des infos de modération si le contenu a été modifié
@@ -178,27 +174,49 @@ class CommentController extends Controller
 
     public function destroy(Comment $comment)
     {
-        if ($comment->user_id !== auth()->id() && !auth()->user()->isAdmin()) {
-            return response()->json(['success' => false, 'message' => 'Vous n\'êtes pas autorisé à supprimer ce commentaire.'], 403);
+        if (!$comment || ($comment->user_id !== auth()->id() && !auth()->user()->isAdmin())) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Vous n\'êtes pas autorisé à supprimer ce commentaire.'
+            ], 403);
         }
 
-        $comment->delete();
+        try {
+            \DB::beginTransaction();
+            
+            // Supprimer le commentaire
+            $comment->delete();
+            
+            \DB::commit();
 
-        return response()->json(['success' => true]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Commentaire supprimé avec succès'
+            ]);
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error('Error deleting comment:', [
+                'comment_id' => $comment->id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la suppression du commentaire'
+            ], 500);
+        }
     }
-
 
     public function index(Post $post)
     {
         $comments = $post->comments()
             ->with('user')
             ->orderBy('created_at', 'desc')
-            ->get();
-
-        foreach ($comments as $comment) {
-            $user = $comment->user;
-            $comment->image = $this->getUserProfileImage($user);
-        }
+            ->get()
+            ->map(function ($comment) {
+                $comment->user_image = $this->getUserProfileImage($comment->user);
+                return $comment;
+            });
 
         return response()->json($comments);
     }

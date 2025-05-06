@@ -16,7 +16,10 @@ use Illuminate\Support\Facades\Route;
 // Routes pour les forums
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/forums', [ForumController::class, 'index'])->name('forums.index');
+    Route::get('/api/forums', [ForumController::class, 'index']);
+
     Route::get('/forums/create', [ForumController::class, 'create'])->name('forums.create');
+    Route::get('/forums/add', [ForumController::class, 'add'])->name('forums.add');
     Route::post('/forums', [ForumController::class, 'store'])->name('forums.store');
     Route::get('/forums/{forum}', [ForumController::class, 'show'])->name('forums.show');
     Route::get('/forums/search', [ForumController::class, 'search'])->name('forums.search');
@@ -28,18 +31,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('forums.participation-status');
 
 // Routes pour les topics
-    Route::post('/forums/{forum}/topics', [TopicController::class, 'store'])->name('topics.store');
-    Route::get('/forums/{forum}/topics', [TopicController::class, 'index'])->name('topics.index'); // Nouvelle route
+    Route::get('/forums/{forum}/topics', [TopicController::class, 'index'])->name('topics.index');
     Route::get('/topics/{topic}', [TopicController::class, 'show'])->name('topics.show');
     Route::get('/forums/{forum}/topics/create', [TopicController::class, 'create'])->name('topics.create');
+    Route::post('/forums/{forum}/topics', [TopicController::class, 'store'])->name('topics.store'); // Ajout de cette route
+    Route::post('/topics/{topic}/posts', [PostController::class, 'store'])->name('posts.store');
 
 // Routes pour les posts
-    Route::post('/topics/{topic}/posts', [PostController::class, 'store'])->name('posts.store');
     Route::get('/user/image', [TopicController::class, 'getUserImage']);
     Route::put('/posts/{post}', [PostController::class, 'update'])->name('posts.update'); 
     Route::delete('/posts/{post}', [PostController::class, 'destroy'])->name('posts.destroy');
     Route::post('/upload-image', [PostController::class, 'uploadImage'])->name('posts.upload-image');
     Route::post('/posts/{post}/best-answer', [PostController::class, 'toggleBestAnswer'])->name('posts.best-answer');
+    Route::post('/posts/{post}/like', [PostController::class, 'like'])->name('posts.like');
+    Route::post('/posts/{post}/report', [PostController::class, 'report'])->name('posts.report');
 
 // Routes pour les commentaires
     Route::get('/posts/{post}/comments', [CommentController::class, 'index'])->name('comments.index');
@@ -74,5 +79,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     Route::post('/reports', [ReportController::class, 'store'])->name('reports.store');
 });
+
+
 
 

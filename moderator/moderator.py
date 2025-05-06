@@ -5,7 +5,6 @@ import numpy as np
 
 app = Flask(__name__)
 
-# Charger le modèle approprié en fonction de la configuration
 MODEL_TYPE = os.environ.get('DETOXIFY_MODEL', 'multilingual')
 models = {
     'multilingual': Detoxify('multilingual'),
@@ -13,7 +12,6 @@ models = {
     'unbiased': Detoxify('unbiased')
 }
 
-# Utiliser le modèle configuré ou par défaut multilingual
 detoxify_model = models.get(MODEL_TYPE, models['multilingual'])
 
 def convert_numpy_types(obj):
@@ -34,21 +32,16 @@ def convert_numpy_types(obj):
 def moderate():
     data = request.get_json()
     text = data.get("text", "")
-    lang = data.get("lang", "fr")  # Langue par défaut: français
+    lang = data.get("lang", "fr")  
     
-    # Obtenir les scores de toxicité pour différentes catégories
     results = detoxify_model.predict(text)
     
-    # Convertir les valeurs numpy en types Python natifs
     results = convert_numpy_types(results)
     
-    # Définir un seuil de toxicité (configurable)
     threshold = float(os.environ.get('TOXICITY_THRESHOLD', '0.7'))
     
-    # Déterminer si le contenu est toxique en fonction des scores
     is_toxic = any(score > threshold for score in results.values())
     
-    # Obtenir la catégorie la plus problématique
     most_toxic_category = max(results.items(), key=lambda x: x[1]) if is_toxic else None
     
     return jsonify({

@@ -12,13 +12,10 @@
         </a>
     </div>
 
-
-
     <ul class="menu-inner py-1">
         <!-- Dashboards -->
         <li class="menu-item">
-            <a href="{{ route('coach.dashboard') }}"
-                class="menu-link">
+            <a href="{{ route('coach.dashboard') }}" class="menu-link">
                 <i class="menu-icon">
                     <span class="iconify" data-icon="material-symbols:dashboard-outline-rounded" data-inline="false"></span>
                 </i>
@@ -26,29 +23,29 @@
             </a>
         </li>
 
-        <!-- Layouts -->
-
+        <!-- Formations -->
         <li class="menu-item">
-            <a href="{{ route('coach.formation') }}"
-                class="menu-link">
+            <a href="{{ route('coach.formation') }}" class="menu-link">
                 <i class="menu-icon">
                     <span class="iconify" data-icon="covid:symptoms-virus-headache-2" data-inline="false"></span>
                 </i>
                 <div data-i18n="Formation">Formation</div>
             </a>
         </li>
+
+        <!-- Agent IA -->
         <li class="menu-item">
-            <a href="{{ route('coach.agentia') }}"
-                class="menu-link">
+            <a href="{{ route('coach.agentia') }}" class="menu-link">
                 <i class="menu-icon">
                     <span class="iconify" data-icon="mage:robot" data-inline="false"></span>
                 </i>
                 <div data-i18n="Agent Ai">Agent Ai</div>
             </a>
         </li>
+
+        <!-- Calendrier -->
         <li class="menu-item">
-            <a href="{{ route('coach.calendrier') }}"
-                class="menu-link">
+            <a href="{{ route('coach.calendrier') }}" class="menu-link">
                 <i class="menu-icon">
                     <span class="iconify" data-icon="solar:calendar-line-duotone" data-inline="false"></span>
                 </i>
@@ -56,41 +53,44 @@
             </a>
         </li>
         
+        <!-- Forum -->
         <li class="menu-item">
-            <a href="{{ route('coach.forum') }}"
-                class="menu-link">
+            <a href="{{ route('coach.forum') }}" class="menu-link">
                 <i class="menu-icon">
                     <span class="iconify" data-icon="charm:messages" data-inline="false"></span>
                 </i>
                 <div data-i18n="Forum">Forum</div>
             </a>
         </li>
+
+        <!-- Ressources -->
         <li class="menu-item">
-            <a href="{{ route('coach.ressources') }}"
-                class="menu-link">
+            <a href="{{ route('coach.ressources') }}" class="menu-link">
                 <i class="menu-icon">
                     <span class="iconify" data-icon="fe:document" data-inline="false"></span>
                 </i>
-                <div data-i18n="Ressources ">Ressources </div>
+                <div data-i18n="Ressources">Ressources</div>
             </a>
         </li>
+
+        <!-- Messagerie -->
         <li class="menu-item">
-            <a href="{{ route('coach.messagerie') }}"
-                class="menu-link">
+            <a href="{{ route('coach.messagerie') }}" class="menu-link">
                 <i class="menu-icon">
                     <span class="iconify" data-icon="hugeicons:message-multiple-01" data-inline="false"></span>
                 </i>
-                <div data-i18n="Messagerie ">Messagerie </div>
+                <div data-i18n="Messagerie">Messagerie</div>
             </a>
         </li>
+
+        <!-- Agent IA généraliste -->
         <li class="menu-item">
-            <a href="{{ route('coach.agent-ia-general') }}"
-                class="menu-link">
+            <a href="{{ route('coach.agent-ia-general') }}" class="menu-link">
                 <i class="menu-icon">
                     <span class="iconify" data-icon="fluent:bot-sparkle-48-regular" data-inline="false"></span>
                 </i>
-                <div data-i18n="Agent IA généraliste ">Agent IA généraliste </div>
+                <div data-i18n="Agent IA généraliste">Agent IA généraliste</div>
             </a>
         </li>
     </ul>
-</aside>
+</aside> 

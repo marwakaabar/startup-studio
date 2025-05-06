@@ -1,4 +1,4 @@
-@extends('coach.layouts.general')
+@extends('layouts.general')
 @section('title')
 Formations en UX/UI
 @endsection

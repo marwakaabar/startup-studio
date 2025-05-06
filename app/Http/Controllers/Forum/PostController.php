@@ -48,7 +48,9 @@ class PostController extends Controller
 
     private function preparePostData($post)
     {
-        $post->load('user', 'topic');
+        $post->load(['user' => function($query) {
+            $query->with(['coach', 'startup', 'investisseur', 'admin']);
+        }, 'topic']);
         $post->topic_user_id = $post->topic->user_id;
         $post->user_image = $this->getUserImage($post->user);
         return $post;
@@ -130,17 +132,18 @@ class PostController extends Controller
     public function update(Request $request, Post $post)
     {
         if ($post->user_id !== auth()->id() && !auth()->user()->isAdmin()) {
-            return response()->json(['success' => false, 'message' => 'Vous n\'êtes pas autorisé à modifier ce post.'], 403);
+            return response()->json([
+                'success' => false, 
+                'message' => 'Vous n\'êtes pas autorisé à modifier ce post.'
+            ], 403);
         }
 
         $request->validate([
             'content' => 'required|string'
         ]);
         
-        // Modérer le contenu avant de l'enregistrer
         $moderationResult = $this->moderationService->moderateContent($request->content);
         
-        // Si le contenu est bloqué, retourner une erreur
         if ($moderationResult['action'] === 'block') {
             return response()->json([
                 'success' => false,
@@ -152,18 +155,15 @@ class PostController extends Controller
             ], 403);
         }
         
-        // Déterminer le contenu à enregistrer
-        $contentToSave = $request->content;
-        if ($moderationResult['action'] === 'modify') {
-            // Si le contenu est modifié, on utilise la version sanitisée
-            $contentToSave = $this->moderationService->sanitizeContent($request->content);
-        }
+        $contentToSave = $moderationResult['action'] === 'modify' 
+            ? $this->moderationService->sanitizeContent($request->content)
+            : $request->content;
 
-        $post->update([
-            'content' => $contentToSave
-        ]);
+        $post->update(['content' => $contentToSave]);
         
-        // Enregistrer le résultat de la modération
+        // Préserver les relations importantes
+        $post->load(['reactions', 'comments', 'topic']);
+        
         $this->moderationService->saveModeration(
             'Post',
             $post->id,
@@ -177,7 +177,6 @@ class PostController extends Controller
             'post' => $this->preparePostData($post)
         ];
         
-        // Ajouter des infos de modération si le contenu a été modifié
         if ($moderationResult['action'] === 'modify') {
             $response['moderation'] = [
                 'was_modified' => true,
@@ -260,5 +259,27 @@ class PostController extends Controller
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Erreur serveur'], 500);
         }
+    }
+
+    public function like(Post $post)
+    {
+        $reaction = $post->reactions()->where('user_id', auth()->id())->first();
+
+        if ($reaction) {
+            $reaction->delete();
+            $liked = false;
+        } else {
+            $post->reactions()->create([
+                'user_id' => auth()->id(),
+                'type' => 'like'
+            ]);
+            $liked = true;
+        }
+
+        return response()->json([
+            'success' => true,
+            'liked' => $liked,
+            'likes_count' => $post->reactions()->where('type', 'like')->count()
+        ]);
     }
 }

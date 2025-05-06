@@ -1,33 +1,30 @@
 <!DOCTYPE html>
-<html lang="fr"
-  class="light-style layout-navbar-fixed layout-menu-fixed layout-compact"
-  dir="ltr"
-  data-theme="theme-default"
-  data-assets-path="../../assets/"
-  data-template="vertical-menu-template">
+<html lang="en" class="light-style layout-menu-fixed layout-navbar-fixed" dir="ltr" data-theme="theme-default"
+  data-assets-path="{{ asset('assets/') }}" data-template="vertical-menu-template">
 
 <head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title> @yield('title')</title>
-  <meta name="csrf-token" content="{{ csrf_token() }}" />
-  <meta name="description" content="@yield('page_description')" />
+  <meta charset="utf-8" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+
+  <title>@yield('title') | Startup Studio Coach</title>
+
+  <meta name="description" content="" />
+
   <!-- Favicon -->
-  <link rel="icon" type="image/x-icon" href="{{asset('assets/img/dash/logo.png')}}" />
-  <link rel="apple-touch-icon" href="{{asset('assets/img/dash/logo.png')}}">
-  <link rel="manifest" href="{{ asset('/manifest.json') }}">
+  <link rel="icon" type="image/x-icon" href="{{ asset('assets/img/favicon/favicon.ico') }}" />
 
   <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
-  <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap"
+    rel="stylesheet" />
+
   <!-- Icons -->
   <link rel="stylesheet" href="{{ asset('assets/vendor/fonts/fontawesome.css') }}" />
   <link rel="stylesheet" href="{{ asset('assets/vendor/fonts/tabler-icons.css') }}" />
   <link rel="stylesheet" href="{{ asset('assets/vendor/fonts/flag-icons.css') }}" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
   <!-- Core CSS -->
   <link rel="stylesheet" href="{{ asset('assets/vendor/css/rtl/core.css') }}" class="template-customizer-core-css" />
@@ -49,7 +46,6 @@
   <script src="{{ asset('assets/vendor/js/helpers.js') }}"></script>
   <!--? Config:  Mandatory theme config file contain global vars & default theme options, Set your preferred theme option in this file.  -->
   <script src="{{ asset('assets/js/config.js') }}"></script>
- <!-- @vite(['resources/css/app.css', 'resources/js/app.js'])-->
   <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
   @yield('css')
 </head>
@@ -125,7 +121,6 @@
 
   <!-- Core JS -->
   <!-- build:js assets/vendor/js/core.js -->
-
   <script src="{{ asset('assets/vendor/libs/jquery/jquery.js') }}"></script>
   <script src="{{ asset('assets/vendor/libs/popper/popper.js') }}"></script>
   <script src="{{ asset('assets/vendor/js/bootstrap.js') }}"></script>
@@ -135,7 +130,6 @@
   <script src="{{ asset('assets/vendor/libs/i18n/i18n.js') }}"></script>
   <script src="{{ asset('assets/vendor/libs/typeahead-js/typeahead.js') }}"></script>
   <script src="{{ asset('assets/vendor/js/menu.js') }}"></script>
-
   <!-- endbuild -->
 
   <!-- Vendors JS -->
@@ -143,35 +137,14 @@
 
   <!-- Main JS -->
   <script src="{{ asset('assets/js/main.js') }}"></script>
+
+  @yield('script')
+
   <script>
-    // On Loading
-    window.addEventListener('load', () => {
-      const loading = document.querySelector('.Loading');
-      if (loading) {
-        loading.style.display = 'none';
-      }
+    window.addEventListener('load', function () {
+        document.querySelector('.Loading').style.display = 'none';
     });
   </script>
-  <script>
-    var menu_item = document.querySelectorAll('.menu-link')
-
-    menu_item.forEach((item) => {
-      if (item.href === window.location.href) {
-        // console.log(item)
-        var parent = item.parentNode
-        var grandparent = parent.parentNode
-        parent.classList.add('active')
-        grandparent.parentNode.classList.add('open')
-
-      }
-
-    })
-  </script>
-
-  <script src="{{ asset('/sw.js') }}"></script>
-  @yield('script')
 </body>
 
-
-
-</html>
+</html> 

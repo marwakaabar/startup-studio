@@ -4,7 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
+use Illuminate\Support\Facades\View;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,18 +19,28 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot()
+    public function boot(): void
     {
-        Inertia::share([
-            'auth' => function () {
-                return [
-                    'user' => Auth::check() ? [
-                        'id' => Auth::user()->id,
-                        'name' => Auth::user()->name,
-                        'role' => Auth::user()->role,
-                    ] : null,
-                ];
-            },
-        ]);
+        View::composer('*', function ($view) {
+            $user = Auth::user();
+            $view->with('auth', [
+                'user' => Auth::check() ? [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'approved' => $user->approved,
+                    'profile_image' => $user->profile_image,
+                    'isCoach' => $user->isCoach(),
+                    'isStartup' => $user->isStartup(),
+                    'isInvestisseur' => $user->isInvestisseur(),
+                    'isAdmin' => $user->isAdmin(),
+                    'coach' => $user->coach,
+                    'startup' => $user->startup,
+                    'investisseur' => $user->investisseur,
+                    'admin' => $user->admin,
+                ] : null,
+            ]);
+        });
     }
 }

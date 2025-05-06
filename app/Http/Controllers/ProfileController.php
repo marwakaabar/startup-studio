@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
-use Inertia\Inertia;
 
 class ProfileController extends Controller
 {
@@ -20,14 +19,15 @@ class ProfileController extends Controller
      * Affiche la page de modification du profil.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Inertia\Response
+     * @return \Illuminate\View\View
      */
 
     public function edit(Request $request)
     {
         $user = $request->user()->load(['investisseur', 'startup', 'coach']);
+        $role = $user->role;
 
-        return Inertia::render('Profile/Edit', [
+        return view($role . '.profil.edit', [
             'user' => $user,
             'status' => session('status')
         ]);

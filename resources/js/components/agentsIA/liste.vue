@@ -83,7 +83,7 @@
                             </div>
                             <div
                                 class="col-lg-4 col-md-4 col-sm-4 col-12 d-lg-flex d-md-flex d-sm-flex d-block justify-content-end align-items-center">
-                                <a :href="'/agentia/add'" class="btn btn-primary fs-sm mb-4">
+                                <a :href="'/coach/agentia/add'" class="btn btn-primary fs-sm mb-4">
                                     Créer un Agent IA
                                 </a>
                             </div>
@@ -105,7 +105,7 @@
                                                         <p>{{ item.description }}</p>
                                                     </div>
                                                     <div class="card-footer btns pt-3">
-                                                        <a :href="'/agentia/details'" class="btn btn-primary fs-sm mb-2">Voir plus</a>
+                                                        <a :href="'/coach/agentia/details'" class="btn btn-primary fs-sm mb-2">Voir plus</a>
                                                         <button class="btn btn-outline-orange fs-sm mb-2">{{ item.price }}
                                                             €</button>
                                                     </div>

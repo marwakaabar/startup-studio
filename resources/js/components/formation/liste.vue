@@ -18,7 +18,7 @@
         </div>
         <div
             class="col-lg-4 col-md-4 col-sm-4 col-12 d-lg-flex d-md-flex d-sm-flex d-block justify-content-end align-items-center">
-            <a :href="'/formation/add'" class="btn btn-primary me-2 mb-4">
+            <a :href="'/coach/formation/add'" class="btn btn-primary me-2 mb-4">
                 Créer une formation
             </a>
         </div>
@@ -41,7 +41,7 @@
                     </div>
                 </div>
                 <div class="card-footer d-flex justify-content-center">
-                    <a href="/formation/details" class="btn btn-primary fs-sm">Consulter <i class="bi bi-chevron-right"></i></a>
+                    <a href="/coach/formation/details" class="btn btn-primary fs-sm">Consulter <i class="bi bi-chevron-right"></i></a>
                 </div>
             </div>
         </div>

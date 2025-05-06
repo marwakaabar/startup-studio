@@ -9,28 +9,21 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
-use Inertia\Inertia;
 use App\Models\Coach;
 use App\Models\Investisseur;
 use App\Models\Startup;
+
 class RegisterController extends Controller
 {
-     /**
+    /**
      * Affiche la page d'inscription.
      *
      * @return \Illuminate\View\View
      */
     public function create()
     {
-        // If the request wants JSON (from Inertia), render the Inertia page
-        if (request()->wantsJson() || request()->header('X-Inertia')) {
-            return Inertia::render('Auth/Register');
-        }
-        
-        // Otherwise, render the Blade view
         return view('auth.register');
     }
-
 
     /**
      * Gère l'inscription d'un nouvel utilisateur.
@@ -43,12 +36,10 @@ class RegisterController extends Controller
         // Validation des données reçues
         $credentials = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
+            'email' => 'required|string|lowercase|email|max:255|unique:' . User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'role' => 'required|in:startup,coach,investisseur',
         ]);
-
-        
 
         //creation user
         $user = User::create([
@@ -56,9 +47,9 @@ class RegisterController extends Controller
             'email' => $request->input('email'),
             'password' => Hash::make($request->input('password')),
             'role' => $request->input('role'),
-            'approved' => false 
+            'approved' => false
         ]);
-    
+
         // Création des modèles associés en fonction du rôle
 
         if ($request->role === 'investisseur') {
@@ -67,14 +58,14 @@ class RegisterController extends Controller
                 'visibility' => $request->input('visibility'),
             ]);
         }
-    
+
         if ($request->role === 'startup') {
             Startup::create([
                 'user_id' => $user->id,
                 'domain_name' => $request->input('domain_name'),
             ]);
         }
-    
+
         if ($request->role === 'coach') {
             Coach::create([
                 'user_id' => $user->id,
@@ -84,8 +75,20 @@ class RegisterController extends Controller
 
         event(new Registered($user));
 
-        //Auth::login($user);
+        // Connecter l'utilisateur
+        Auth::login($user);
 
-        return redirect()->route('login');
+        // Si c'est une requête AJAX, renvoyer une réponse JSON
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Votre compte a été créé avec succès. Veuillez vérifier votre email et attendre l\'approbation de l\'administrateur.',
+                'redirect' => route('verification.notice')
+            ]);
+        }
+
+        // Redirection vers la page de vérification avec message d'information
+        return redirect()->route('verification.notice')
+            ->with('message', 'Votre compte a été créé avec succès. Veuillez vérifier votre email et attendre l\'approbation de l\'administrateur.');
     }
 }
